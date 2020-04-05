@@ -7,30 +7,30 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.view.View;
 import android.widget.EditText;
-import android.app.Activity;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.fitness.FitnessOptions;
-import com.google.android.gms.fitness.data.DataType;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.fitness.request.DataReadRequest;
-import com.google.android.gms.fitness.result.DataReadResponse;
-import com.google.android.gms.fitness.Fitness;
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import android.util.Log;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import android.support.annotation.NonNull;
 
+
+import org.json.JSONObject;
 
 
 public class LogIn extends AppCompatActivity {
+    private String tag = "tiffany";
+    private String loginEndpoint;
+    private String officerEndpoint;
+
+    JsonObjectRequest jsonObjectRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log_in);
+
+        loginEndpoint = getString(R.string.api_base_url) + "/login";
+        officerEndpoint = getString(R.string.api_base_url) + "/officer";
     }
 
     @Override
@@ -69,6 +69,25 @@ public class LogIn extends AppCompatActivity {
         final Editable passwordText = password.getText();
         final String userNameString = userName.toString();
         final String passwordString = passwordText.toString();
+
+        jsonObjectRequest = new JsonObjectRequest
+                (Request.Method.GET, loginEndpoint, null, new Response.Listener<JSONObject>() {
+
+                    @Override
+                    public void onResponse(JSONObject response) {
+//                        textView.setText("Response: " + response.toString());
+                        Log.d(tag, response.toString());
+                    }
+                }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // TODO: Handle error
+
+                    }
+                });
+
+
 
         if (validSignIn(userNameString, passwordString)) {
             Intent newIntent = new Intent(this, BluetoothPrompt.class);
