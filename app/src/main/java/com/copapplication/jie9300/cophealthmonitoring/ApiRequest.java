@@ -1,6 +1,7 @@
 package com.copapplication.jie9300.cophealthmonitoring;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -10,6 +11,8 @@ public class ApiRequest {
     private RequestQueue requestQueue;
     private static Context ctx;
     private static ApiRequest instance;
+    SharedPreferences sharedPreferences;
+
 
 
     private ApiRequest(Context context) {
