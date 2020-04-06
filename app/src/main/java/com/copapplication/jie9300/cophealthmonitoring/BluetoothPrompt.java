@@ -152,8 +152,8 @@ public class BluetoothPrompt extends AppCompatActivity {
 
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("deviceID", deviceID);
-        editor.putInt("minHR", minHR);
-        editor.putInt("maxHR", maxHR);
+        editor.putInt("minRate", minHR);
+        editor.putInt("maxRate", maxHR);
         editor.commit();
 
         return true;
