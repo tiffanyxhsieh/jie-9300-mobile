@@ -49,7 +49,7 @@ public class BluetoothPrompt extends AppCompatActivity {
         maxRate = Optional.ofNullable(sharedPreferences.getInt("maxRate",0)).orElse(0);
         Log.d("tiffany", Integer.toString(maxRate));
 
-        deviceID = Optional.ofNullable(sharedPreferences.getString("deviceID","0")).orElse("Serial #");
+        deviceID = Optional.ofNullable(sharedPreferences.getString("device_id","0")).orElse("Serial #");
 
         buttonConfirm = (Button) findViewById(R.id.buttonConfirm);
 
@@ -103,7 +103,6 @@ public class BluetoothPrompt extends AppCompatActivity {
                         errorListener);
 
                 ApiRequest.getInstance(ctx).addToRequestQueue(jsonObjectRequest);
-
 
                 if (checkTextValues()) {
                     Intent newIntent = new Intent(BluetoothPrompt.this, HealthMetrics.class);

@@ -11,7 +11,6 @@ public class ApiRequest {
     private RequestQueue requestQueue;
     private static Context ctx;
     private static ApiRequest instance;
-    SharedPreferences sharedPreferences;
 
 
 

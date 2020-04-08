@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
@@ -12,7 +14,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -57,7 +58,7 @@ public class HealthMetrics extends AppCompatActivity {
     private int counter;
     private FusedLocationProviderClient fusedLocationClient;
     private String[] coordinates = {"-1", "-1"};
-
+    private boolean hrUiSetup = false;
 
 
 
@@ -86,9 +87,12 @@ public class HealthMetrics extends AppCompatActivity {
 
         sharedPreferences = getSharedPreferences("Settings", 0);
         deviceID = sharedPreferences.getString("deviceID", "0");
-        lowerBound = sharedPreferences.getInt("minHR", 0);
-            upperBound = sharedPreferences.getInt("maxHR",  0);
+        lowerBound = sharedPreferences.getInt("minRate", 0);
+            upperBound = sharedPreferences.getInt("maxRate",  0);
         connected = false;
+
+        Log.d(TAG, "minHR: " + lowerBound);
+        Log.d(TAG, "maxHR: " + upperBound);
 
         counter = 0;
 
@@ -102,28 +106,57 @@ public class HealthMetrics extends AppCompatActivity {
             @Override
             public void deviceConnected(PolarDeviceInfo polarDeviceInfo) {
                 Log.d(TAG, "CONNECTED: " + polarDeviceInfo.deviceId);
-                textViewDeviceFound.setVisibility(View.INVISIBLE);
-                textViewDeviceConnecting.setVisibility(View.VISIBLE);
+                Handler handler = new Handler(Looper.getMainLooper());
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        textViewDeviceFound.setVisibility(View.INVISIBLE);
+                        textViewDeviceConnecting.setVisibility(View.VISIBLE);
+                    }
+                });
+
             }
 
             @Override
             public void deviceConnecting(PolarDeviceInfo polarDeviceInfo) {
-                Log.d(TAG, "CONNECTING: " + polarDeviceInfo.deviceId);
-                textViewSearchingForDevice.setVisibility(View.INVISIBLE);
-                textViewDeviceFound.setVisibility(View.VISIBLE);
+                Handler handler = new Handler(Looper.getMainLooper() );
+                final String deviceId = polarDeviceInfo.deviceId;
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(TAG, "CONNECTING: " + deviceId);
+                        textViewSearchingForDevice.setVisibility(View.INVISIBLE);
+                        textViewDeviceFound.setVisibility(View.VISIBLE);
+                    }
+                });
+
             }
 
             @Override
             public void hrFeatureReady(String identifier) {
-                Log.d(TAG, "HR READY: " + identifier);
-                textViewDeviceConnecting.setVisibility(View.INVISIBLE);
-                textViewWaitingForHeartRate.setVisibility(View.VISIBLE);
+                Handler handler = new Handler();
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Log.d(TAG, "HR READY: " );
+                        textViewDeviceConnecting.setVisibility(View.INVISIBLE);
+                        textViewWaitingForHeartRate.setVisibility(View.VISIBLE);
+
+                    }
+                });
+
+
             }
 
             @Override
             public void hrNotificationReceived(String identifier, PolarHrData data) {
 
                 Log.d(TAG, "Here");
+
+                if (!hrUiSetup || heartRate.getVisibility() == View.INVISIBLE) {
+                    hrUiReady(); //Sets up the UI for the hr view
+                }
 
                 if (connected) {
                     counter++;
@@ -135,15 +168,8 @@ public class HealthMetrics extends AppCompatActivity {
                         Log.d(TAG, Integer.toString(data.hr));
                     }
 
-                } else if (data.hr > 0) {
-                    Log.d(TAG, "here1");
-                    connected = true;
-                    textViewWaitingForHeartRate.setVisibility(View.INVISIBLE);
-                    loadingProgressBar.setVisibility(View.INVISIBLE);
-                    heartRate.setVisibility(View.VISIBLE);
-                    textView4.setVisibility(View.VISIBLE);
-                    imageView2.setVisibility(View.VISIBLE);
-                    goodHeartRateProgressBar.setVisibility(View.VISIBLE);
+                    heartRateData(Integer.toString(data.hr));
+
                 }
             }
 
@@ -248,20 +274,28 @@ public class HealthMetrics extends AppCompatActivity {
     //setup for when we need to pass dynamic value to heart rate number
     public void heartRateData(String value) {
 
-        TextView heartRate = (TextView) findViewById(R.id.heartRate);
-        heartRate.setText(value);
+        final String hrReading = value;
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                TextView heartRate = (TextView) findViewById(R.id.heartRate);
+                heartRate.setText(hrReading);
 
-        ProgressBar goodProgressBar = (ProgressBar)findViewById(R.id.goodHeartRateProgressBar);
-        ProgressBar badProgressBar = (ProgressBar)findViewById(R.id.badHeartRateProgressBar);
+                ProgressBar goodProgressBar = (ProgressBar)findViewById(R.id.goodHeartRateProgressBar);
+                ProgressBar badProgressBar = (ProgressBar)findViewById(R.id.badHeartRateProgressBar);
 
-        double heartRateValue = Double.parseDouble(value);
-        if (outsideBounds(heartRateValue)) {
-            goodProgressBar.setVisibility(View.INVISIBLE);
-            badProgressBar.setVisibility(View.VISIBLE);
-        } else {
-            badProgressBar.setVisibility(View.INVISIBLE);
-            goodProgressBar.setVisibility(View.VISIBLE);
-        }
+                double heartRateValue = Double.parseDouble(hrReading);
+                if (outsideBounds(heartRateValue)) {
+                    goodProgressBar.setVisibility(View.INVISIBLE);
+                    badProgressBar.setVisibility(View.VISIBLE);
+                } else {
+                    badProgressBar.setVisibility(View.INVISIBLE);
+                    goodProgressBar.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
 
     }
 
@@ -280,6 +314,28 @@ public class HealthMetrics extends AppCompatActivity {
                         }
                     }
                 });
+    }
+
+    private void hrUiReady() {
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "here1");
+                connected = true;
+                textViewWaitingForHeartRate.setVisibility(View.INVISIBLE);
+                loadingProgressBar.setVisibility(View.INVISIBLE);
+                heartRate.setVisibility(View.VISIBLE);
+                textView4.setVisibility(View.VISIBLE);
+                imageView2.setVisibility(View.VISIBLE);
+                goodHeartRateProgressBar.setVisibility(View.VISIBLE);
+
+                hrUiSetup = true;
+                Log.d(TAG, "ui setup done");
+            }
+        });
+
+
     }
 
 }
