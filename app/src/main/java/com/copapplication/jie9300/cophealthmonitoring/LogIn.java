@@ -73,10 +73,7 @@ public class LogIn extends AppCompatActivity {
         final String usernameString = username.getText().toString().trim();
         final String passwordString = password.getText().toString();
 
-
         loginEndpoint = getString(R.string.api_base_url) + "/validate_login";
-
-        //
         JSONObject loginParams = new JSONObject();
         try {
             loginParams.put("username", usernameString);
@@ -113,8 +110,6 @@ public class LogIn extends AppCompatActivity {
 
                             @Override
                             public void onErrorResponse(VolleyError error) {
-                                // TODO: Handle error
-                                Log.d("tiffany", "error json");
                                 Log.d("tiffany", error.toString());
                             }
                         });
@@ -162,7 +157,7 @@ public class LogIn extends AppCompatActivity {
 
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        // TODO: Handle error
+                        Log.d(tag, error.toString());
                     }
                 });
 
@@ -172,7 +167,6 @@ public class LogIn extends AppCompatActivity {
     }
 
     private void getMaxMinHR() {
-        //TODO: call /officer endpoint and store result in sharedpreferences
         String officerEndpoint = getString(R.string.api_base_url) + "/officer";
         String url = officerEndpoint + "?officer_id=" + officerId;
 
@@ -218,12 +212,6 @@ public class LogIn extends AppCompatActivity {
     }
 
     private void goToBluetooth() {
-//        SharedPreferences.Editor editor = sharedPreferences.edit();
-//
-//        editor.putInt("minRate", minRate);
-//        editor.putInt("maxRate", maxRate);
-//        editor.commit();
-
         Log.d(tag, "changing intents");
         Intent newIntent = new Intent(this, BluetoothPrompt.class);
         startActivity(newIntent);
