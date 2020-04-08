@@ -17,7 +17,7 @@ import org.json.JSONObject;
 
 public class LogIn extends AppCompatActivity {
     private String tag = "tiffany";
-    private String officerId;
+    private int officerId;
     private int maxRate;
     private int minRate;
 
@@ -34,7 +34,6 @@ public class LogIn extends AppCompatActivity {
         setContentView(R.layout.activity_log_in);
 
         sharedPreferences = getSharedPreferences("Settings", 0);
-
 
     }
 
@@ -95,7 +94,8 @@ public class LogIn extends AppCompatActivity {
                                 Log.d("tiffany", response.toString());
                                 try {
                                     if (response.getString("message").equals("LOGIN_SUCCESS")) {
-                                        officerId = response.getString("officer_id");
+                                        officerId = response.getInt("officer_id");
+                                        saveOfficerId(officerId);
                                         getMaxMinHR();
                                         getDeviceId();
                                     } else if (response.getString("message").equals("LOGIN_SUCCESS")){
@@ -111,6 +111,7 @@ public class LogIn extends AppCompatActivity {
                             @Override
                             public void onErrorResponse(VolleyError error) {
                                 Log.d("tiffany", error.toString());
+                                Log.d(tag, "login POST failure");
                             }
                         });
 
@@ -122,7 +123,11 @@ public class LogIn extends AppCompatActivity {
 
 
 
-
+    private void saveOfficerId(int officerId) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt("officer_id", officerId);
+        editor.commit();
+    }
     private void getDeviceId() {
         String deviceEndpoint = getString(R.string.api_base_url) + "/devices";
         String url = deviceEndpoint + "?officer_id=" + officerId;
@@ -158,6 +163,8 @@ public class LogIn extends AppCompatActivity {
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         Log.d(tag, error.toString());
+                        Log.d(tag, "error retrieving deviceid");
+
                     }
                 });
 
@@ -203,7 +210,7 @@ public class LogIn extends AppCompatActivity {
 
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        // TODO: Handle error
+                        Log.d(tag, "error retrieving hr bounds");
 
                     }
                 });
@@ -224,7 +231,6 @@ public class LogIn extends AppCompatActivity {
         dialog.setPositiveButton("OK", null);
         dialog.show();
     }
-
 
     private void saveDeviceID(String deviceId) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
