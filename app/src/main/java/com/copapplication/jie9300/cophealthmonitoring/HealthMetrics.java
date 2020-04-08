@@ -3,6 +3,7 @@ package com.copapplication.jie9300.cophealthmonitoring;
 import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.icu.text.SimpleDateFormat;
 import android.location.Location;
 import android.os.Build;
 import android.os.Handler;
@@ -19,9 +20,19 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+
+import java.util.Date;
 
 import polar.com.sdk.api.PolarBleApi;
 import polar.com.sdk.api.PolarBleApiCallback;
@@ -29,7 +40,6 @@ import polar.com.sdk.api.PolarBleApiDefaultImpl;
 import polar.com.sdk.api.errors.PolarInvalidArgument;
 import polar.com.sdk.api.model.PolarDeviceInfo;
 import polar.com.sdk.api.model.PolarHrData;
-
 
 
 public class HealthMetrics extends AppCompatActivity {
@@ -59,11 +69,10 @@ public class HealthMetrics extends AppCompatActivity {
     private FusedLocationProviderClient fusedLocationClient;
     private String[] coordinates = {"-1", "-1"};
     private boolean hrUiSetup = false;
-
+    private int officerId;
 
 
 //    String DEVICE_ID = "6C3E002B"; // or bt address like F5:A7:B8:EF:7A:D1 // TODO replace with your device id
-
 
 
     @Override
@@ -88,7 +97,8 @@ public class HealthMetrics extends AppCompatActivity {
         sharedPreferences = getSharedPreferences("Settings", 0);
         deviceID = sharedPreferences.getString("deviceID", "0");
         lowerBound = sharedPreferences.getInt("minRate", 0);
-            upperBound = sharedPreferences.getInt("maxRate",  0);
+        upperBound = sharedPreferences.getInt("maxRate", 0);
+        officerId = sharedPreferences.getInt("officer_id", 0);
         connected = false;
 
         Log.d(TAG, "minHR: " + lowerBound);
@@ -119,7 +129,7 @@ public class HealthMetrics extends AppCompatActivity {
 
             @Override
             public void deviceConnecting(PolarDeviceInfo polarDeviceInfo) {
-                Handler handler = new Handler(Looper.getMainLooper() );
+                Handler handler = new Handler(Looper.getMainLooper());
                 final String deviceId = polarDeviceInfo.deviceId;
                 handler.post(new Runnable() {
                     @Override
@@ -139,7 +149,7 @@ public class HealthMetrics extends AppCompatActivity {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        Log.d(TAG, "HR READY: " );
+                        Log.d(TAG, "HR READY: ");
                         textViewDeviceConnecting.setVisibility(View.INVISIBLE);
                         textViewWaitingForHeartRate.setVisibility(View.VISIBLE);
 
@@ -166,6 +176,10 @@ public class HealthMetrics extends AppCompatActivity {
                         getLocation();
                         Log.d(TAG, coordinates[0] + " " + coordinates[1]);
                         Log.d(TAG, Integer.toString(data.hr));
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        String currentDateTime = dateFormat.format(new Date()); // Find todays date
+
+                        updateOfficerStatus(Float.parseFloat(coordinates[0]), Float.parseFloat(coordinates[1]), data.hr, currentDateTime);
                     }
 
                     heartRateData(Integer.toString(data.hr));
@@ -216,7 +230,7 @@ public class HealthMetrics extends AppCompatActivity {
 //            }
 //        });
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && savedInstanceState == null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && savedInstanceState == null) {
             this.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
 
@@ -235,8 +249,8 @@ public class HealthMetrics extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        if(requestCode == 1) {
-            Log.d(TAG,"bt ready");
+        if (requestCode == 1) {
+            Log.d(TAG, "bt ready");
         }
     }
 
@@ -282,8 +296,8 @@ public class HealthMetrics extends AppCompatActivity {
                 TextView heartRate = (TextView) findViewById(R.id.heartRate);
                 heartRate.setText(hrReading);
 
-                ProgressBar goodProgressBar = (ProgressBar)findViewById(R.id.goodHeartRateProgressBar);
-                ProgressBar badProgressBar = (ProgressBar)findViewById(R.id.badHeartRateProgressBar);
+                ProgressBar goodProgressBar = (ProgressBar) findViewById(R.id.goodHeartRateProgressBar);
+                ProgressBar badProgressBar = (ProgressBar) findViewById(R.id.badHeartRateProgressBar);
 
                 double heartRateValue = Double.parseDouble(hrReading);
                 if (outsideBounds(heartRateValue)) {
@@ -308,7 +322,7 @@ public class HealthMetrics extends AppCompatActivity {
                 .addOnSuccessListener(this, new OnSuccessListener<Location>() {
                     @Override
                     public void onSuccess(Location location) {
-                        if(location != null) {
+                        if (location != null) {
                             coordinates[0] = Double.toString(location.getLatitude());
                             coordinates[1] = Double.toString(location.getLongitude());
                         }
@@ -316,7 +330,7 @@ public class HealthMetrics extends AppCompatActivity {
                 });
     }
 
-    private void hrUiReady() {
+    public void hrUiReady() {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             @Override
@@ -338,4 +352,51 @@ public class HealthMetrics extends AppCompatActivity {
 
     }
 
+
+    private void updateOfficerStatus(float latitude, float longitude, int hr, String timestamp) {
+        String url = getString(R.string.api_base_url) + "/healthMetrics";
+        JSONObject requestBody = new JSONObject();
+        try {
+            requestBody.put("officer_id", officerId);
+            requestBody.put("time_stamp", timestamp);
+            requestBody.put("heart_rate", hr);
+            requestBody.put("latitude", latitude);
+            requestBody.put("longitude", longitude);
+
+
+        } catch (JSONException e) {
+            Log.d("tiffany", "json login param error");
+        }
+        JsonObjectRequest request =
+                new JsonObjectRequest(
+                        Request.Method.POST,
+                        url,
+                        requestBody,
+                        new Response.Listener<JSONObject>() {
+
+                            @Override
+                            public void onResponse(JSONObject response) {
+                                try {
+                                    String responseString = response.getString("message");
+                                    if (responseString.equals("UPDATE_SUCCESSFUL")) {
+                                        Log.d(TAG, "SUCCESSFUL POST!!!!");
+                                    }
+
+
+                                } catch (JSONException e) {
+                                    Log.d(TAG, e.toString());
+                                }
+                            }
+                        }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.d(TAG, "Couldn't POST :(");
+
+                    }
+                });
+
+        ApiRequest.getInstance(this).addToRequestQueue(request);
+
+    }
 }

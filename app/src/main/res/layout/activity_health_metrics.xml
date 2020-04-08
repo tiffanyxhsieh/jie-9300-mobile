@@ -53,7 +53,6 @@
         app:srcCompat="@drawable/newheartimg" />
 
     <ProgressBar
-
         android:id="@+id/goodHeartRateProgressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="318dp"
@@ -78,7 +77,7 @@
         android:progress="100"
         android:progressDrawable="@drawable/bad_circular"
         android:secondaryProgress="100"
-        android:visibility="gone"
+        android:visibility="invisible"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"/>
 
