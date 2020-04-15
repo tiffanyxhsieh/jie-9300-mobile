@@ -155,8 +155,11 @@ public class HealthMetrics extends AppCompatActivity {
 
                     }
                 });
+            }
 
-
+            @Override
+            public void deviceDisconnected(PolarDeviceInfo polarDeviceInfo) {
+                Log.d(TAG,"DISCONNECTED: " + polarDeviceInfo.deviceId);
             }
 
             @Override

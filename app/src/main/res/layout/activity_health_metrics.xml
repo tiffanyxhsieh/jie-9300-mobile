@@ -10,15 +10,13 @@
         android:id="@+id/heartRate"
         android:layout_width="93dp"
         android:layout_height="69dp"
-        android:layout_alignTop="@+id/loadingProgressBar"
-        android:layout_alignBottom="@+id/loadingProgressBar"
-        android:layout_alignRight="@id/loadingProgressBar"
-        android:layout_alignLeft="@id/loadingProgressBar"
+        android:layout_above="@+id/textViewSearchingForDevice"
+        android:layout_alignEnd="@+id/loadingProgressBar"
+        android:layout_alignStart="@+id/loadingProgressBar"
         android:text="--"
         android:textAlignment="center"
         android:textSize="55dp"
-        android:visibility="invisible"
-    />
+        android:visibility="invisible" />
 
 
 
