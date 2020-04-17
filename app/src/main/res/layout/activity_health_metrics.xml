@@ -158,4 +158,14 @@
         app:itemIconTint="@android:color/white"
         app:itemTextColor="@android:color/white" />
 
+    <ProgressBar
+        android:id="@+id/progressBar2"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/bottom_navigation"
+        android:layout_alignStart="@+id/textView4"
+        android:layout_marginBottom="12dp"
+        android:visibility="invisible" />
+
 </RelativeLayout>

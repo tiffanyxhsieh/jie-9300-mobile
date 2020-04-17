@@ -24,6 +24,7 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.androidcommunications.polar.api.ble.model.advertisement.BleAdvertisementContent;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -44,6 +45,7 @@ import polar.com.sdk.api.model.PolarHrData;
 
 public class HealthMetrics extends AppCompatActivity {
     private String TAG = "tiffany";
+    private String TAG2 = "dawar";
 
     private int lowerBound;
     private int upperBound;
@@ -62,6 +64,7 @@ public class HealthMetrics extends AppCompatActivity {
     private TextView textViewDeviceFound;
     private TextView textViewDeviceConnecting;
     private TextView textViewWaitingForHeartRate;
+    private ProgressBar progressBar2;
 
     private BottomNavigationView bottomNavigationView;
 
@@ -70,6 +73,7 @@ public class HealthMetrics extends AppCompatActivity {
     private String[] coordinates = {"-1", "-1"};
     private boolean hrUiSetup = false;
     private int officerId;
+    private boolean isConnected = false;
 
 
 //    String DEVICE_ID = "6C3E002B"; // or bt address like F5:A7:B8:EF:7A:D1 // TODO replace with your device id
@@ -93,12 +97,13 @@ public class HealthMetrics extends AppCompatActivity {
         textViewDeviceConnecting = (TextView) findViewById(R.id.textViewDeviceConnecting);
         textViewWaitingForHeartRate = (TextView) findViewById(R.id.textViewWaitingForHeartRate);
         bottomNavigationView = (BottomNavigationView) findViewById(R.id.bottom_navigation);
+        progressBar2 = (ProgressBar) findViewById(R.id.progressBar2);
 
         sharedPreferences = getSharedPreferences("Settings", 0);
         deviceID = sharedPreferences.getString("deviceID", "0");
         lowerBound = sharedPreferences.getInt("minRate", 0);
         upperBound = sharedPreferences.getInt("maxRate", 0);
-        officerId = sharedPreferences.getInt("officer_id", 0);
+        officerId =  sharedPreferences.getInt("officer_id", 0);
         connected = false;
 
         Log.d(TAG, "minHR: " + lowerBound);
@@ -115,6 +120,7 @@ public class HealthMetrics extends AppCompatActivity {
         api.setApiCallback(new PolarBleApiCallback() {
             @Override
             public void deviceConnected(PolarDeviceInfo polarDeviceInfo) {
+                isConnected = true;
                 Log.d(TAG, "CONNECTED: " + polarDeviceInfo.deviceId);
                 Handler handler = new Handler(Looper.getMainLooper());
                 handler.post(new Runnable() {
@@ -159,7 +165,7 @@ public class HealthMetrics extends AppCompatActivity {
 
             @Override
             public void deviceDisconnected(PolarDeviceInfo polarDeviceInfo) {
-                Log.d(TAG,"DISCONNECTED: " + polarDeviceInfo.deviceId);
+                Log.d(TAG2,"DISCONNECTED: " + polarDeviceInfo.deviceId);
             }
 
             @Override
@@ -178,7 +184,7 @@ public class HealthMetrics extends AppCompatActivity {
                         heartRateData(Integer.toString(data.hr));
                         getLocation();
                         Log.d(TAG, coordinates[0] + " " + coordinates[1]);
-                        Log.d(TAG, Integer.toString(data.hr));
+                        Log.d(TAG2, Integer.toString(data.hr));
                         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                         String currentDateTime = dateFormat.format(new Date()); // Find todays date
 
@@ -194,28 +200,18 @@ public class HealthMetrics extends AppCompatActivity {
 
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            public boolean onNavigationItemSelected(@NonNull final MenuItem item) {
 
-                try {
-                    api.disconnectFromDevice(deviceID);
-                } catch (PolarInvalidArgument polarInvalidArgument) {
-                    polarInvalidArgument.printStackTrace();
-                }
 
-                switch (item.getItemId()) {
-                    case R.id.action_preferences:
-                        Intent newIntent = new Intent(HealthMetrics.this, BluetoothPrompt.class);
-                        startActivity(newIntent);
-                        break;
-                    case R.id.action_logout:
-                        Intent newIntent2 = new Intent(HealthMetrics.this, MainActivity.class);
-                        startActivity(newIntent2);
-                        break;
-                    case R.id.action_disconnect:
-                        Intent newIntent3 = new Intent(HealthMetrics.this, BluetoothPrompt.class);
-                        startActivity(newIntent3);
-                        break;
-                }
+                progressBar2.setVisibility(View.VISIBLE);
+
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        disconnectDevice(item);
+                    }
+                }, 5000);
+
                 return true;
             }
         });
@@ -237,15 +233,49 @@ public class HealthMetrics extends AppCompatActivity {
             this.requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
 
-        connectDevice();
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                connectDevice();
+            }
+        }, 5000);
     }
 
     public void connectDevice() {
 
         try {
+            Log.d(TAG2, "i'm here");
             api.connectToDevice(deviceID);
         } catch (PolarInvalidArgument polarInvalidArgument) {
             polarInvalidArgument.printStackTrace();
+        }
+
+    }
+
+    public void disconnectDevice(@NonNull MenuItem item) {
+
+        try {
+            api.disconnectFromDevice(deviceID);
+        } catch (PolarInvalidArgument polarInvalidArgument) {
+            polarInvalidArgument.printStackTrace();
+        }
+
+        switch (item.getItemId()) {
+            case R.id.action_preferences:
+                Log.d(TAG2, "jjawss");
+                Intent newIntent = new Intent(HealthMetrics.this, BluetoothPrompt.class);
+                startActivity(newIntent);
+                break;
+            case R.id.action_logout:
+                Log.d(TAG2, "jjawss");
+                Intent newIntent2 = new Intent(HealthMetrics.this, MainActivity.class);
+                startActivity(newIntent2);
+                break;
+            case R.id.action_disconnect:
+                Log.d(TAG2, "jjawss");
+                Intent newIntent3 = new Intent(HealthMetrics.this, BluetoothPrompt.class);
+                startActivity(newIntent3);
+                break;
         }
 
     }
